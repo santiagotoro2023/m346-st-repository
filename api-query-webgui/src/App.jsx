@@ -1,86 +1,190 @@
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 
-function App() {
-  const [query, setQuery] = useState("SELECT * FROM users;");
-  const [data, setData] = useState(null);
+const endpoints = {
+  users: "users",
+  courses: "courses",
+  course_assignment: "course_assignment",
+};
+
+const tables = [
+  { value: "users", label: "👥 Users" },
+  { value: "courses", label: "📘 Courses" },
+  { value: "course_assignment", label: "📝 Course Assignment" },
+];
+
+const BASE_URL =
+  "https://jpm9l2v1be.execute-api.us-east-1.amazonaws.com/prod";
+
+export default function App() {
+  const [selectedTable, setSelectedTable] = useState("users");
+  const [queryString, setQueryString] = useState("");
   const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
-  const runQuery = async () => {
+  async function fetchTableData() {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`/api/query?sql=${encodeURIComponent(query)}`);
-      const result = await response.json();
-      setData(result);
-    } catch (err) {
-      setError("❌ Fehler beim Abrufen der Daten.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setData(null);
 
-  useEffect(() => {
-    runQuery();
-  }, []);
+    let url = `${BASE_URL}/${endpoints[selectedTable]}`;
+
+    if (queryString.trim() !== "") {
+      if (!queryString.startsWith("?")) {
+        setLoading(false);
+        setError("⚠️ Query string muss mit '?' starten!");
+        return;
+      }
+      url += queryString;
+    }
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+      const json = await res.json();
+
+      let tableData = json;
+      if (typeof json === "object" && !Array.isArray(json)) {
+        // Einzelobjekt in Array umwandeln
+        tableData = [json];
+      }
+      if (!Array.isArray(tableData)) {
+        setError("⚠️ Unerwartetes Datenformat von API");
+        setLoading(false);
+        return;
+      }
+      if (tableData.length === 0) {
+        setError("🔍 Keine Daten gefunden.");
+        setLoading(false);
+        return;
+      }
+      setData(tableData);
+    } catch (e) {
+      setError(`❗ Fehler bei der API-Anfrage: ${e.message}`);
+    }
+
+    setLoading(false);
+  }
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-zinc-100 px-4 py-8 font-sans">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-center mb-6">📊 API Query GUI</h1>
+    <div className="min-h-screen bg-gray-900 text-gray-200 flex flex-col items-center p-8 font-sans">
+      <h1 className="text-4xl mb-8 font-bold tracking-wide select-none">
+        🖥️ API Query WebGUI
+      </h1>
 
-        <div className="rounded-2xl bg-zinc-800 p-6 shadow-xl space-y-4 transition hover:shadow-2xl">
-          <label htmlFor="query" className="block text-sm font-semibold mb-1">🧠 SQL Query</label>
-          <textarea
-            id="query"
-            className="w-full p-3 rounded-xl bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            rows="4"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-semibold transition-transform active:scale-95"
-            onClick={runQuery}
-            disabled={loading}
-          >
-            {loading ? "⏳ Abfrage läuft..." : "🚀 Abfrage ausführen"}
-          </button>
-        </div>
+      <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-lg transition-shadow hover:shadow-2xl">
+        <label
+          htmlFor="table-select"
+          className="block mb-3 font-semibold text-gray-300"
+        >
+          Tabelle auswählen:
+        </label>
+        <select
+          id="table-select"
+          value={selectedTable}
+          onChange={(e) => setSelectedTable(e.target.value)}
+          className="w-full rounded-lg bg-gray-700 text-gray-200 p-3 mb-4 appearance-none cursor-pointer hover:bg-gray-600 transition-colors"
+        >
+          {tables.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
 
-        <div className="rounded-2xl bg-zinc-800 p-6 shadow-xl overflow-x-auto">
-          <h2 className="text-xl font-bold mb-4">📥 Ergebnisse</h2>
-          {error && <p className="text-red-400">{error}</p>}
-          {!error && data && data.length === 0 && (
-            <p className="text-gray-400">Keine Daten gefunden.</p>
+        <label
+          htmlFor="query-string"
+          className="block mb-3 font-semibold text-gray-300"
+        >
+          Optional: Query-String eingeben (z.B. <code>?firstname=Clara</code>)
+        </label>
+        <input
+          id="query-string"
+          type="text"
+          placeholder="?filter=value"
+          value={queryString}
+          onChange={(e) => setQueryString(e.target.value)}
+          className="w-full rounded-lg bg-gray-700 text-gray-200 p-3 mb-6 placeholder-gray-400 border border-gray-600 focus:border-indigo-500 outline-none transition"
+        />
+
+        <button
+          onClick={fetchTableData}
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl py-3 font-semibold text-white hover:brightness-110 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              ⏳ Daten laden
+              <span className="spinner-border animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+            </span>
+          ) : (
+            "Daten abrufen"
           )}
-          {!error && data && data.length > 0 && (
-            <table className="min-w-full text-sm text-left border-collapse">
+        </button>
+
+        {error && (
+          <div className="mt-6 text-red-400 font-semibold select-text">{error}</div>
+        )}
+
+        {data && (
+          <div
+            className="mt-6 bg-gray-700 rounded-xl p-4 overflow-auto max-h-96"
+            style={{ fontFamily: "monospace" }}
+          >
+            <table className="w-full table-auto border-collapse border border-gray-600">
               <thead>
                 <tr>
                   {Object.keys(data[0]).map((key) => (
-                    <th key={key} className="border-b border-zinc-600 px-4 py-2 font-semibold text-zinc-300">
+                    <th
+                      key={key}
+                      className="border border-gray-600 px-3 py-1 text-left text-gray-300 bg-gray-800 sticky top-0"
+                    >
                       {key}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="hover:bg-zinc-700 transition">
-                    {Object.values(row).map((value, colIndex) => (
-                      <td key={colIndex} className="border-b border-zinc-700 px-4 py-2">
-                        {String(value)}
+                {data.map((row, idx) => (
+                  <tr
+                    key={idx}
+                    className={idx % 2 === 0 ? "bg-gray-600" : "bg-gray-700"}
+                  >
+                    {Object.values(row).map((val, i) => (
+                      <td
+                        key={i}
+                        className="border border-gray-600 px-3 py-1 text-gray-200"
+                      >
+                        {typeof val === "object"
+                          ? JSON.stringify(val)
+                          : val?.toString()}
                       </td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      <footer className="mt-12 text-gray-500 text-xs select-none">
+        Made with ❤️ by Santiago Toro
+      </footer>
+
+      {/* Spinner CSS */}
+      <style>{`
+        .spinner-border {
+          border-top-color: transparent;
+          border-right-color: transparent;
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
-
-export default App;
