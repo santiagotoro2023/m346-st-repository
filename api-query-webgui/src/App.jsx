@@ -1,104 +1,86 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useEffect, useState } from "react";
 
-const endpoints = {
-  '1': 'users',
-  '2': 'courses',
-  '3': 'course_assignment',
-};
-
-const API_BASE = 'https://jpm9l2v1be.execute-api.us-east-1.amazonaws.com/prod';
-
-export default function App() {
-  const [selected, setSelected] = useState('1');
-  const [query, setQuery] = useState('');
+function App() {
+  const [query, setQuery] = useState("SELECT * FROM users;");
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
 
-  const handleFetch = async () => {
+  const runQuery = async () => {
     setLoading(true);
+    setError(null);
     try {
-      let url = `${API_BASE}/${endpoints[selected]}`;
-      if (query.startsWith('?')) url += query;
-      const response = await axios.get(url);
-      const result = Array.isArray(response.data) ? response.data : [response.data];
+      const response = await fetch(`/api/query?sql=${encodeURIComponent(query)}`);
+      const result = await response.json();
       setData(result);
     } catch (err) {
-      console.error('API Error:', err);
-      setData([]);
+      setError("❌ Fehler beim Abrufen der Daten.");
     } finally {
       setLoading(false);
     }
   };
 
-  const headers = data.length > 0 ? Object.keys(data[0]) : [];
+  useEffect(() => {
+    runQuery();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white p-6 font-sans">
-      <motion.h1 
-        className="text-3xl font-bold mb-6 text-center"
-        initial={{ opacity: 0, y: -20 }} 
-        animate={{ opacity: 1, y: 0 }}
-      >
-        📊 API Query Dashboard
-      </motion.h1>
+    <div className="min-h-screen bg-zinc-900 text-zinc-100 px-4 py-8 font-sans">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <h1 className="text-3xl font-bold text-center mb-6">📊 API Query GUI</h1>
 
-      <Card className="bg-neutral-800 rounded-2xl shadow-lg max-w-3xl mx-auto p-6">
-        <CardContent className="space-y-4">
-          <div className="flex gap-2 flex-col sm:flex-row">
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="bg-neutral-700 rounded-xl px-4 py-2 w-full"
-            >
-              <option value="1">👥 /users</option>
-              <option value="2">📘 /courses</option>
-              <option value="3">📝 /course_assignment</option>
-            </select>
-            <Input
-              placeholder="Optional query string (e.g. ?firstname=Clara)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-neutral-700 text-white rounded-xl"
-            />
-            <Button onClick={handleFetch} className="bg-blue-600 hover:bg-blue-700 rounded-xl">
-              🚀 Query
-            </Button>
-          </div>
-          {loading ? (
-            <p className="text-center animate-pulse">⏳ Loading data...</p>
-          ) : (
-            data.length > 0 && (
-              <div className="overflow-x-auto rounded-xl border border-neutral-700">
-                <Table className="min-w-full text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      {headers.map((h, idx) => (
-                        <TableHead key={idx}>{h}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.map((row, i) => (
-                      <TableRow key={i} className="hover:bg-neutral-700">
-                        {headers.map((h, idx) => (
-                          <TableCell key={idx}>{String(row[h])}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )
+        <div className="rounded-2xl bg-zinc-800 p-6 shadow-xl space-y-4 transition hover:shadow-2xl">
+          <label htmlFor="query" className="block text-sm font-semibold mb-1">🧠 SQL Query</label>
+          <textarea
+            id="query"
+            className="w-full p-3 rounded-xl bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            rows="4"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-semibold transition-transform active:scale-95"
+            onClick={runQuery}
+            disabled={loading}
+          >
+            {loading ? "⏳ Abfrage läuft..." : "🚀 Abfrage ausführen"}
+          </button>
+        </div>
+
+        <div className="rounded-2xl bg-zinc-800 p-6 shadow-xl overflow-x-auto">
+          <h2 className="text-xl font-bold mb-4">📥 Ergebnisse</h2>
+          {error && <p className="text-red-400">{error}</p>}
+          {!error && data && data.length === 0 && (
+            <p className="text-gray-400">Keine Daten gefunden.</p>
           )}
-          {!loading && data.length === 0 && <p className="text-center text-neutral-400">🔍 No data loaded yet.</p>}
-        </CardContent>
-      </Card>
+          {!error && data && data.length > 0 && (
+            <table className="min-w-full text-sm text-left border-collapse">
+              <thead>
+                <tr>
+                  {Object.keys(data[0]).map((key) => (
+                    <th key={key} className="border-b border-zinc-600 px-4 py-2 font-semibold text-zinc-300">
+                      {key}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="hover:bg-zinc-700 transition">
+                    {Object.values(row).map((value, colIndex) => (
+                      <td key={colIndex} className="border-b border-zinc-700 px-4 py-2">
+                        {String(value)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
+export default App;
