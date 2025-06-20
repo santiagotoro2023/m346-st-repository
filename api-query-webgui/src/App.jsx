@@ -150,7 +150,7 @@ export default function App() {
           border-radius: 16px;
           box-shadow: 0 0 25px rgba(0,0,0,0.5);
           padding: 32px;
-          max-width: 1000px;
+          max-width: 75vw;
           width: 100%;
           animation: fadeIn 0.6s ease-in-out;
         }
