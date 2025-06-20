@@ -28,11 +28,10 @@ export default function App() {
     setData(null);
 
     let url = `${BASE_URL}/${endpoints[selectedTable]}`;
-
     if (queryString.trim() !== "") {
       if (!queryString.startsWith("?")) {
         setLoading(false);
-        setError("⚠️ Query string muss mit '?' starten!");
+        setError("⚠️ Query-String muss mit '?' starten!");
         return;
       }
       url += queryString;
@@ -45,19 +44,21 @@ export default function App() {
 
       let tableData = json;
       if (typeof json === "object" && !Array.isArray(json)) {
-        // Einzelobjekt in Array umwandeln
         tableData = [json];
       }
+
       if (!Array.isArray(tableData)) {
         setError("⚠️ Unerwartetes Datenformat von API");
         setLoading(false);
         return;
       }
+
       if (tableData.length === 0) {
         setError("🔍 Keine Daten gefunden.");
         setLoading(false);
         return;
       }
+
       setData(tableData);
     } catch (e) {
       setError(`❗ Fehler bei der API-Anfrage: ${e.message}`);
@@ -67,122 +68,106 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-200 flex flex-col items-center p-8 font-sans">
-      <h1 className="text-4xl mb-8 font-bold tracking-wide select-none">
-        🖥️ API Query WebGUI
-      </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans p-4">
+      <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-3xl space-y-6 animate-fade-in">
+        <h1 className="text-4xl font-bold text-center text-white">
+          🖥️ API Query WebGUI
+        </h1>
 
-      <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-lg shadow-lg transition-shadow hover:shadow-2xl">
-        <label
-          htmlFor="table-select"
-          className="block mb-3 font-semibold text-gray-300"
-        >
-          Tabelle auswählen:
-        </label>
-        <select
-          id="table-select"
-          value={selectedTable}
-          onChange={(e) => setSelectedTable(e.target.value)}
-          className="w-full rounded-lg bg-gray-700 text-gray-200 p-3 mb-4 appearance-none cursor-pointer hover:bg-gray-600 transition-colors"
-        >
-          {tables.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className="space-y-4">
+          <div>
+            <label className="block mb-2 text-gray-300 font-semibold">
+              Tabelle auswählen:
+            </label>
+            <select
+              value={selectedTable}
+              onChange={(e) => setSelectedTable(e.target.value)}
+              className="w-full p-3 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {tables.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <label
-          htmlFor="query-string"
-          className="block mb-3 font-semibold text-gray-300"
-        >
-          Optional: Query-String eingeben (z.B. <code>?firstname=Clara</code>)
-        </label>
-        <input
-          id="query-string"
-          type="text"
-          placeholder="?filter=value"
-          value={queryString}
-          onChange={(e) => setQueryString(e.target.value)}
-          className="w-full rounded-lg bg-gray-700 text-gray-200 p-3 mb-6 placeholder-gray-400 border border-gray-600 focus:border-indigo-500 outline-none transition"
-        />
+          <div>
+            <label className="block mb-2 text-gray-300 font-semibold">
+              Optional: Query-String eingeben (z.B. <code>?firstname=Clara</code>)
+            </label>
+            <input
+              type="text"
+              value={queryString}
+              onChange={(e) => setQueryString(e.target.value)}
+              placeholder="?filter=value"
+              className="w-full p-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
 
-        <button
-          onClick={fetchTableData}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl py-3 font-semibold text-white hover:brightness-110 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <span className="inline-flex items-center gap-2">
-              ⏳ Daten laden
-              <span className="spinner-border animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
-            </span>
-          ) : (
-            "Daten abrufen"
-          )}
-        </button>
-
-        {error && (
-          <div className="mt-6 text-red-400 font-semibold select-text">{error}</div>
-        )}
-
-        {data && (
-          <div
-            className="mt-6 bg-gray-700 rounded-xl p-4 overflow-auto max-h-96"
-            style={{ fontFamily: "monospace" }}
+          <button
+            onClick={fetchTableData}
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold disabled:opacity-50"
           >
-            <table className="w-full table-auto border-collapse border border-gray-600">
-              <thead>
-                <tr>
-                  {Object.keys(data[0]).map((key) => (
-                    <th
-                      key={key}
-                      className="border border-gray-600 px-3 py-1 text-left text-gray-300 bg-gray-800 sticky top-0"
-                    >
-                      {key}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row, idx) => (
-                  <tr
-                    key={idx}
-                    className={idx % 2 === 0 ? "bg-gray-600" : "bg-gray-700"}
-                  >
-                    {Object.values(row).map((val, i) => (
-                      <td
-                        key={i}
-                        className="border border-gray-600 px-3 py-1 text-gray-200"
+            {loading ? "⏳ Lädt..." : "🔍 Daten abrufen"}
+          </button>
+
+          {error && (
+            <div className="text-red-400 font-semibold">{error}</div>
+          )}
+
+          {data && (
+            <div className="overflow-auto max-h-96">
+              <table className="w-full text-left table-auto border border-gray-600">
+                <thead className="bg-gray-700 sticky top-0 z-10">
+                  <tr>
+                    {Object.keys(data[0]).map((key) => (
+                      <th
+                        key={key}
+                        className="p-2 border border-gray-600 text-gray-300"
                       >
-                        {typeof val === "object"
-                          ? JSON.stringify(val)
-                          : val?.toString()}
-                      </td>
+                        {key}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {data.map((row, idx) => (
+                    <tr
+                      key={idx}
+                      className={idx % 2 === 0 ? "bg-gray-700" : "bg-gray-800"}
+                    >
+                      {Object.values(row).map((val, i) => (
+                        <td
+                          key={i}
+                          className="p-2 border border-gray-700 text-gray-100"
+                        >
+                          {typeof val === "object"
+                            ? JSON.stringify(val)
+                            : val?.toString()}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <p className="text-center text-gray-500 text-sm pt-4">
+          Made with ❤️ by Santiago Toro
+        </p>
       </div>
 
-      <footer className="mt-12 text-gray-500 text-xs select-none">
-        Made with ❤️ by Santiago Toro
-      </footer>
-
-      {/* Spinner CSS */}
       <style>{`
-        .spinner-border {
-          border-top-color: transparent;
-          border-right-color: transparent;
+        .animate-fade-in {
+          animation: fadeIn 1s ease-in-out;
         }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
