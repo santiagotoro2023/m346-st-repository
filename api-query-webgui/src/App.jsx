@@ -68,106 +68,196 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-3xl space-y-6 animate-fade-in">
-        <h1 className="text-4xl font-bold text-center text-white">
-          🖥️ API Query WebGUI
-        </h1>
+    <div className="app-container">
+      <div className="gui-box">
+        <h1>🖥️ API Query WebGUI</h1>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block mb-2 text-gray-300 font-semibold">
-              Tabelle auswählen:
-            </label>
-            <select
-              value={selectedTable}
-              onChange={(e) => setSelectedTable(e.target.value)}
-              className="w-full p-3 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {tables.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block mb-2 text-gray-300 font-semibold">
-              Optional: Query-String eingeben (z.B. <code>?firstname=Clara</code>)
-            </label>
-            <input
-              type="text"
-              value={queryString}
-              onChange={(e) => setQueryString(e.target.value)}
-              placeholder="?filter=value"
-              className="w-full p-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          <button
-            onClick={fetchTableData}
-            disabled={loading}
-            className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold disabled:opacity-50"
+        <label>
+          Tabelle auswählen:
+          <select
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
           >
-            {loading ? "⏳ Lädt..." : "🔍 Daten abrufen"}
-          </button>
+            {tables.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          {error && (
-            <div className="text-red-400 font-semibold">{error}</div>
-          )}
+        <label>
+          Optional: Query-String (z.B. <code>?firstname=Clara</code>)
+          <input
+            type="text"
+            value={queryString}
+            onChange={(e) => setQueryString(e.target.value)}
+            placeholder="?filter=value"
+          />
+        </label>
 
-          {data && (
-            <div className="overflow-auto max-h-96">
-              <table className="w-full text-left table-auto border border-gray-600">
-                <thead className="bg-gray-700 sticky top-0 z-10">
-                  <tr>
-                    {Object.keys(data[0]).map((key) => (
-                      <th
-                        key={key}
-                        className="p-2 border border-gray-600 text-gray-300"
-                      >
-                        {key}
-                      </th>
+        <button onClick={fetchTableData} disabled={loading}>
+          {loading ? "⏳ Lädt..." : "🔍 Daten abrufen"}
+        </button>
+
+        {error && <div className="error">{error}</div>}
+
+        {data && (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  {Object.keys(data[0]).map((key) => (
+                    <th key={key}>{key}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, idx) => (
+                  <tr key={idx}>
+                    {Object.values(row).map((val, i) => (
+                      <td key={i}>
+                        {typeof val === "object"
+                          ? JSON.stringify(val)
+                          : val?.toString()}
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {data.map((row, idx) => (
-                    <tr
-                      key={idx}
-                      className={idx % 2 === 0 ? "bg-gray-700" : "bg-gray-800"}
-                    >
-                      {Object.values(row).map((val, i) => (
-                        <td
-                          key={i}
-                          className="p-2 border border-gray-700 text-gray-100"
-                        >
-                          {typeof val === "object"
-                            ? JSON.stringify(val)
-                            : val?.toString()}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        <p className="text-center text-gray-500 text-sm pt-4">
-          Made with ❤️ by Santiago Toro
-        </p>
+        <p className="footer">Made with ❤️ by Santiago Toro</p>
       </div>
 
       <style>{`
-        .animate-fade-in {
-          animation: fadeIn 1s ease-in-out;
+        body, html, .app-container {
+          height: 100%;
+          margin: 0;
+          font-family: 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
         }
+
+        .gui-box {
+          background: #2a2a2a;
+          border-radius: 16px;
+          box-shadow: 0 0 25px rgba(0,0,0,0.5);
+          padding: 32px;
+          max-width: 800px;
+          width: 100%;
+          animation: fadeIn 0.6s ease-in-out;
+        }
+
+        h1 {
+          text-align: center;
+          margin-bottom: 24px;
+          font-size: 2rem;
+        }
+
+        label {
+          display: block;
+          margin-bottom: 16px;
+          font-weight: 600;
+        }
+
+        select, input {
+          width: 100%;
+          padding: 12px;
+          margin-top: 8px;
+          border: none;
+          border-radius: 8px;
+          background: #3a3a3a;
+          color: #fff;
+        }
+
+        input::placeholder {
+          color: #aaa;
+        }
+
+        button {
+          width: 100%;
+          padding: 12px;
+          margin-top: 8px;
+          background-color: #4f46e5;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+          background-color: #4338ca;
+        }
+
+        button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .error {
+          margin-top: 12px;
+          color: #ff6b6b;
+          font-weight: bold;
+        }
+
+        .table-wrapper {
+          overflow-x: auto;
+          max-height: 400px;
+          margin-top: 16px;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: #1e1e1e;
+          border: 1px solid #444;
+        }
+
+        th, td {
+          padding: 10px;
+          border: 1px solid #444;
+          text-align: left;
+        }
+
+        th {
+          background-color: #333;
+          position: sticky;
+          top: 0;
+        }
+
+        tr:nth-child(even) {
+          background-color: #2a2a2a;
+        }
+
+        tr:nth-child(odd) {
+          background-color: #1f1f1f;
+        }
+
+        .footer {
+          text-align: center;
+          font-size: 0.8rem;
+          color: #aaa;
+          margin-top: 24px;
+        }
+
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
